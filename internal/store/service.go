@@ -47,3 +47,10 @@ func (s *StorageService) RetrieveInitialURL(shortURL string) (string, error) {
 	}
 	return result, nil
 }
+
+func (s *StorageService) Close() error {
+	if err := s.redisClient.Close(); err != nil {
+		return fmt.Errorf("close redis client: %w", err)
+	}
+	return nil
+}

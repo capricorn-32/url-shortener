@@ -1,0 +1,49 @@
+package store
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/go-redis/redis/v8"
+)
+
+type StorageService struct {
+	redisClient *redis.Client
+	ctx         context.Context
+}
+
+const CacheDuration = 6 * time.Hour
+
+func NewStorageService(addr, password string, db int) (*StorageService, error) {
+	ctx := context.Background()
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: password,
+		DB:       db,
+	})
+
+	if _, err := redisClient.Ping(ctx).Result(); err != nil {
+		return nil, fmt.Errorf("ping redis: %w", err)
+	}
+
+	return &StorageService{
+		redisClient: redisClient,
+		ctx:         ctx,
+	}, nil
+}
+
+func (s *StorageService) SaveURLMapping(shortURL, originalURL string) error {
+	if err := s.redisClient.Set(s.ctx, shortURL, originalURL, CacheDuration).Err(); err != nil {
+		return fmt.Errorf("save URL mapping: %w", err)
+	}
+	return nil
+}
+
+func (s *StorageService) RetrieveInitialURL(shortURL string) (string, error) {
+	result, err := s.redisClient.Get(s.ctx, shortURL).Result()
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}

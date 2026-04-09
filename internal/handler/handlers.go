@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -42,6 +43,11 @@ func (h *Handler) CreateShortURL(c *gin.Context) {
 		return
 	}
 
+	if err := validateLongURL(creationRequest.LongURL); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	shortURL := shortener.GenerateShortLink(creationRequest.LongURL, creationRequest.UserID)
 	if err := h.store.SaveURLMapping(shortURL, creationRequest.LongURL); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save URL mapping"})
@@ -67,4 +73,21 @@ func (h *Handler) HandleShortURLRedirect(c *gin.Context) {
 	}
 
 	c.Redirect(http.StatusFound, initialURL)
+}
+
+func validateLongURL(rawURL string) error {
+	parsedURL, err := url.ParseRequestURI(rawURL)
+	if err != nil {
+		return errors.New("long_url must be a valid URL")
+	}
+
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return errors.New("long_url must use http or https scheme")
+	}
+
+	if parsedURL.Host == "" {
+		return errors.New("long_url must include a valid host")
+	}
+
+	return nil
 }

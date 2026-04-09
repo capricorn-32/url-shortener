@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -14,6 +15,8 @@ type StorageService struct {
 }
 
 const CacheDuration = 6 * time.Hour
+
+var ErrShortURLExists = errors.New("short URL already exists")
 
 func NewStorageService(addr, password string, db int) (*StorageService, error) {
 	ctx := context.Background()
@@ -34,8 +37,12 @@ func NewStorageService(addr, password string, db int) (*StorageService, error) {
 }
 
 func (s *StorageService) SaveURLMapping(shortURL, originalURL string) error {
-	if err := s.redisClient.Set(s.ctx, shortURL, originalURL, CacheDuration).Err(); err != nil {
+	ok, err := s.redisClient.SetNX(s.ctx, shortURL, originalURL, CacheDuration).Result()
+	if err != nil {
 		return fmt.Errorf("save URL mapping: %w", err)
+	}
+	if !ok {
+		return ErrShortURLExists
 	}
 	return nil
 }

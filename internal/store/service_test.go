@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
@@ -36,4 +37,28 @@ func TestInsertionAndRetrieval(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, initialLink, retrievedURL)
+}
+
+func TestSaveURLMappingCollision(t *testing.T) {
+	miniRedis, err := miniredis.Run()
+	require.NoError(t, err)
+	defer miniRedis.Close()
+
+	testStoreService, err := NewStorageService(miniRedis.Addr(), "", 0)
+	require.NoError(t, err)
+
+	shortURL := "samecode"
+	firstURL := "https://example.com/first"
+	secondURL := "https://example.com/second"
+
+	err = testStoreService.SaveURLMapping(shortURL, firstURL)
+	require.NoError(t, err)
+
+	err = testStoreService.SaveURLMapping(shortURL, secondURL)
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, ErrShortURLExists))
+
+	retrievedURL, err := testStoreService.RetrieveInitialURL(shortURL)
+	require.NoError(t, err)
+	assert.Equal(t, firstURL, retrievedURL)
 }

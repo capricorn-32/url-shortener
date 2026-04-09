@@ -24,7 +24,16 @@ func base58Encoded(bytes []byte) (string, error) {
 }
 
 func GenerateShortLink(initialLink string, userID string) string {
-	urlHashBytes := sha256Of(initialLink + userID)
+	return GenerateShortLinkWithSalt(initialLink, userID, 0)
+}
+
+func GenerateShortLinkWithSalt(initialLink string, userID string, salt int) string {
+	input := initialLink + userID
+	if salt > 0 {
+		input = fmt.Sprintf("%s:%d", input, salt)
+	}
+
+	urlHashBytes := sha256Of(input)
 	generatedNumber := new(big.Int).SetBytes(urlHashBytes).Uint64()
 	finalString, err := base58Encoded([]byte(fmt.Sprintf("%d", generatedNumber)))
 	if err != nil {

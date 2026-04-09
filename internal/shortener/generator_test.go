@@ -22,3 +22,16 @@ func TestShortLinkGenerator(t *testing.T) {
 	assert.Equal(t, "d66yfx7N", shortLink2)
 	assert.Equal(t, "dhZTayYQ", shortLink3)
 }
+
+func TestShortLinkGeneratorWithSalt(t *testing.T) {
+	initialLink := "https://example.com/path"
+	base := GenerateShortLinkWithSalt(initialLink, userID, 0)
+	withSaltOne := GenerateShortLinkWithSalt(initialLink, userID, 1)
+	withSaltTwo := GenerateShortLinkWithSalt(initialLink, userID, 2)
+
+	assert.NotEmpty(t, base)
+	assert.NotEmpty(t, withSaltOne)
+	assert.NotEmpty(t, withSaltTwo)
+	assert.NotEqual(t, base, withSaltOne)
+	assert.NotEqual(t, withSaltOne, withSaltTwo)
+}

@@ -39,8 +39,8 @@ func GenerateShortLinkWithSalt(initialLink string, userID string, salt int) stri
 	if err != nil {
 		return ""
 	}
-	if len(finalString) < 8 {
+	if len(finalString) < 4 {
 		return finalString
 	}
-	return finalString[:8]
+	return finalString[:4]
 }
